@@ -4,13 +4,17 @@ Created on Fri Dec 18 13:36:08 2020
 
 @author: daviej9
 
+Usage:
+* pip3 install -r requirements.txt
+* streamlit run app.py
+
 Functions:
     * _load_data
     * _find_distinct_values
     * _scaling
-    * _feature_selection
     * _train_test_split
-    * _visualise
+    * _predict
+    * _visualise_features_to_behaviour
     * run    
     
 Classes:
@@ -21,13 +25,21 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# Powerpoint suggested libraries
+#import streamlit as st
+
 from sklearn import preprocessing
-from sklearn.feature_selection import VarianceThreshold
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.neural_network import MLPClassifier
+from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import classification_report
+
+# Other models
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.naive_bayes import GaussianNB
+from sklearn.svm import SVC
 
 from rich.console import Console
 console = Console()
@@ -70,27 +82,13 @@ def _scaling(series_name):
         series_name
         
     Returns:
+        sc_transform
     """
     sc = preprocessing.OrdinalEncoder()
     sc_fit = sc.fit(series_name)   
     sc_transform = sc_fit.transform(series_name)
     return sc_transform
-    
-    
-def _feature_selection(df):
-    """
-    _feature_selection
-    
-    Args:
-        df
-    Returns:
-        df
-    """
-    # Kirsty messages: - do for all categorical columns
-    le = preprocessing.LabelEncoder()
-    le.fit(df['target'])
-    return le
-
+  
 
 def _train_test_split(df):
     """
@@ -100,9 +98,11 @@ def _train_test_split(df):
         df
         
     Returns:
-        stuff
+        X_train
+        X_test
+        y_train
+        y_test
     """
-    #train_test_split(x, y, test_size=0.3)
     target_value = "target"
     feature_names = df.columns[np.where(df.columns != target_value)]
     X = df[feature_names].values
@@ -114,17 +114,97 @@ def _train_test_split(df):
     
     return X_train, X_test, y_train, y_test
   
-
-def _visualise(clf, X_test, y_test):
-  """
-  _visualise
-  """
-  y_pred = clf.predict(X_test)
-  plt.scatter(y_test, y_pred)
-  plt.xlabel("True values")
-  plt.ylabel("Predictions")
   
+def _predict(model, test):
+  """
+  Predict whether someone is naughy or nice
+  
+  Args:
+    model
+    test
+  """
+  X_test = _scaling(test)
+  y_pred = model.predict(X_test[:len(test)])
+  
+  print(f"Predictions: {y_pred}")
+  
+  return y_pred
 
+      
+def _visualise_features_to_behaviour(df):
+  """
+  Visualise the data
+  
+  Args:
+    df (Pandas DataFrame)
+    
+  Returns:
+    None
+  """
+  for col in df.columns:
+    if col == 'race':
+      amount = 'eye_colour'
+    else:
+      amount = 'race'
+    df.groupby(['target', col]).count()[amount].unstack().plot(kind='bar')
+    plt.ylabel('Frequency')
+    plt.show()
+    
+    
+def _k_neighbor_model(df, X_train, y_train, X_test, y_test):
+  """
+  docstring
+  """
+  best_score = 0
+  max_k = int(len(df) / 2)
+  for k in range(1, max_k):
+    clf = KNeighborsClassifier(n_neighbors=k
+                              ).fit(X_train, y_train)
+    score = clf.score(X_test, y_test)
+    
+    if score > best_score:
+      best_score = score
+      model = clf
+      optimum_k = k
+    
+  print(f"Optimum k: {optimum_k}")
+  return model
+
+
+def _MLP_classifier(X_train, y_train):
+  """
+  docstring
+  """
+  parameter_space = {
+    'hidden_layer_sizes': [(50,50,50), (50,100,50), (100,)],
+    'activation': ['tanh', 'relu'],
+    'solver': ['sgd', 'adam'],
+    'alpha': [0.0001, 0.05],
+    'learning_rate': ['constant','adaptive'],
+    'random_state': [0, 1000000]
+ }
+  
+  mlp = MLPClassifier(max_iter=1000000)
+
+  clf = GridSearchCV(mlp, parameter_space, n_jobs=-1, cv=3)
+  clf.fit(X_train, y_train)
+  
+  # Best paramete set
+  print('Best parameters found:\n', clf.best_params_)
+
+  # All results
+#  means = clf.cv_results_['mean_test_score']
+#  stds = clf.cv_results_['std_test_score']
+#  for mean, std, params in zip(means, stds, clf.cv_results_['params']):
+#      print("%0.3f (+/-%0.03f) for %r" % (mean, std * 2, params))
+#  
+#  clf = MLPClassifier(activation='relu', alpha=0.0001,
+#                      hidden_layer_sizes=(100,), learning_rate='constant',
+#                      random_state=0, solver='sgd'
+#                      ).fit(X_train, y_train) 
+  return clf
+  
+    
 
 def run(path, verbose=0):
     """
@@ -139,17 +219,13 @@ def run(path, verbose=0):
     """
     raw_df = _load_data(path)
     
+    _visualise_features_to_behaviour(raw_df)
     
     if verbose == 1:
       print("Input Data:")
       print(raw_df.head())
       distinct_dict = _find_distinct_values(raw_df)
       print(distinct_dict)
-        
-        
-#    # feature selection
-#    le =  _feature_selection(raw_df)
-    
        
     df = raw_df
    
@@ -161,34 +237,42 @@ def run(path, verbose=0):
     
     # scaling
     X_train = _scaling(X_train)
-    X_test = _scaling(X_test)
-    # y scaling breaks :(
-    #y_train = _scaling(y_train)
-    #y_test = _scaling(y_test)
+    X_test = _scaling(X_test)  
+  
+    clf = _k_neighbor_model(df, X_train, y_train, X_test, y_test)
     
+    # DecisionTreeClassifier
+    clf = DecisionTreeClassifier().fit(X_train, y_train)
     
-    clf = MLPClassifier(hidden_layer_sizes=(100, ),
-                        activation='relu', solver='adam',
-                        alpha=0.0001, batch_size='auto',
-                        learning_rate='constant', learning_rate_init=0.001,
-                        power_t=0.5, max_iter=10000000000000000000,
-                        shuffle=True,
-                        random_state=6, tol=0.0001, verbose=False,
-                        warm_start=False, momentum=0.9, nesterovs_momentum=True,
-                        early_stopping=False, validation_fraction=0.1,
-                        beta_1=0.9, beta_2=0.999, epsilon=1e-08,
-                        n_iter_no_change=10, max_fun=15000
-                        ).fit(X_train, y_train)
+    # LogisticRegression
+    clf = LogisticRegression().fit(X_train, y_train)
+    
+    # GaussianNB
+    clf = GaussianNB().fit(X_train, y_train)
+    print("GaussianNB")
+    print(clf.score(X_test, y_test))
+    print(classification_report(y_test, clf.predict(X_test)))
+    
+    # SVC
+    clf = SVC().fit(X_train, y_train)
+    print("SVC")
+    print(clf.score(X_test, y_test))
+    print(classification_report(y_test, clf.predict(X_test)))
+    
+    # MLP classifier
+    clf = _MLP_classifier(X_train, y_train)
+    
     clf.predict_proba(X_test[:1])
     clf.predict(X_test[:5, :])
-    score = clf.score(X_test, y_test)
-    print(clf)
-    print(score)
     
-    #_visualise(clf, X_test, y_test)
+    score = clf.score(X_test, y_test)
     
     report = classification_report(y_test, clf.predict(X_test))
-    print(report)
+    
+    # Predict whether someone is naughty or nice
+    test = [['blue', 'human', 'red', 'tall', 'alive'],
+            ['brown', 'human', 'bald', 'tall', 'alive']]
+    y_pred = _predict(clf, test)
     
     
     results_dict = {'raw_data': raw_df}
@@ -196,12 +280,21 @@ def run(path, verbose=0):
     return results_dict, score, report
 
     
-if __name__ == "__main__":    
-    #path = "H:\My Documents\christmas_hack\christmas_hack_naughty_or_nice.csv"
+if __name__ == "__main__":
+#    st.write("""
+#    # My first app
+#    Hello *world!*
+#    """)
+#    
+#    x = st.slider("Select a number", 0, 100)
+#    st.write("You selected", x)
+  
+  
+  
     path = "/home/cdsw/christmas_hack_naughty_or_nice.csv"
     
     verbose = 0
-    party = True
+    party = False
     results, score, report = run(path, verbose)
     
     # Party?!
@@ -210,6 +303,7 @@ if __name__ == "__main__":
         console.print(":tada:", f"SCORE = {score} so PARTY!", ":tada:")
         i = i + 1
     
+    console.print(":sunglasses:", f"SCORE = {score}", ":sunglasses:")
     console.print(":sunglasses:", "Report", ":sunglasses:")
     print(report)
     
