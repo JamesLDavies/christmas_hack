@@ -6,7 +6,7 @@ Created on Fri Dec 18 13:36:08 2020
 
 Usage:
 * pip3 install -r requirements.txt
-* streamlit run app.py
+* streamlit run xmas_hack.py
 
 Functions:
     * _load_data
@@ -23,9 +23,9 @@ Classes:
 
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+import plotly.express as px
 
-#import streamlit as st
+import streamlit as st
 
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
@@ -43,6 +43,14 @@ from sklearn.svm import SVC
 
 from rich.console import Console
 console = Console()
+
+st.set_page_config(
+        page_title='James Davies Naughty or Nice ML Dashboard',
+        layout='wide'
+        )
+    
+st.sidebar.title('James is cool')
+st.sidebar.write('Hello World!')
 
 
 def _load_data(path):
@@ -131,24 +139,22 @@ def _predict(model, test):
   return y_pred
 
       
-def _visualise_features_to_behaviour(df):
+def _visualise_features_to_behaviour(df, target_col):
   """
   Visualise the data
   
   Args:
     df (Pandas DataFrame)
+    target_col (String)
     
   Returns:
     None
   """
-  for col in df.columns:
-    if col == 'race':
-      amount = 'eye_colour'
-    else:
-      amount = 'race'
-    df.groupby(['target', col]).count()[amount].unstack().plot(kind='bar')
-    plt.ylabel('Frequency')
-    plt.show()
+  x_col = st.selectbox(label='What do you want to plot?',
+                       options=sorted(df.columns.drop(target_col)))
+  st.plotly_chart(
+      px.histogram(df, x=x_col, barmode='group', color=target_col),
+      use_container_width=True,)   
     
     
 def _k_neighbor_model(df, X_train, y_train, X_test, y_test):
@@ -219,7 +225,13 @@ def run(path, verbose=0):
     """
     raw_df = _load_data(path)
     
-    _visualise_features_to_behaviour(raw_df)
+    st.write('Head of Input Data:')
+    st.dataframe(raw_df.head())
+    
+    target_col = st.sidebar.selectbox(label='Select target column:',
+                                      options=sorted(raw_df.columns))
+    
+    _visualise_features_to_behaviour(raw_df, target_col)
     
     if verbose == 1:
       print("Input Data:")
@@ -253,6 +265,7 @@ def run(path, verbose=0):
     print(clf.score(X_test, y_test))
     print(classification_report(y_test, clf.predict(X_test)))
     
+    
     # SVC
     clf = SVC().fit(X_train, y_train)
     print("SVC")
@@ -279,19 +292,12 @@ def run(path, verbose=0):
     
     return results_dict, score, report
 
+
+
     
 if __name__ == "__main__":
-#    st.write("""
-#    # My first app
-#    Hello *world!*
-#    """)
-#    
-#    x = st.slider("Select a number", 0, 100)
-#    st.write("You selected", x)
   
-  
-  
-    path = "/home/cdsw/christmas_hack_naughty_or_nice.csv"
+    path = "christmas_hack_naughty_or_nice.csv"
     
     verbose = 0
     party = False
