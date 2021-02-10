@@ -196,6 +196,138 @@ def _MLP_classifier(X_train, y_train):
 #                      random_state=0, solver='sgd'
 #                      ).fit(X_train, y_train) 
   return clf
+
+
+def args_KNeighborsClassifier():
+    """
+    Options for arguments
+    
+    Args:
+        None
+        
+    Returns:
+        Dict: keys(String) - arg
+              values - argument in the form of a streamlit option
+    """
+    return {
+        'n_neighbors': st.sidebar.slider(
+            label='Number of neighbours:',
+            min_value=1,
+            max_value=20,
+            step=1
+            ),
+        'weights': st.sidebar.selectbox(
+            label='weights',
+            options=['uniform', 'distance']
+            ),
+        'algorithm': st.sidebar.selectbox(
+            label='algorithm',
+            options=['auto', 'ball_tree', 'kd_tree', 'brute']
+            ),
+        }
+
+
+def args_DecisionTreeClassifier():
+    """
+    Options for arguments
+    
+    Args:
+        None
+        
+    Returns:
+        Dict: keys(String) - arg
+              values - argument in the form of a streamlit option
+    """
+    return {}
+
+
+def args_LogisticRegression():
+    """
+    Options for arguments
+    
+    Args:
+        None
+        
+    Returns:
+        Dict: keys(String) - arg
+              values - argument in the form of a streamlit option
+    """
+    return {
+        'penalty': st.sidebar.selectbox(
+            label='penalty',
+            options=['l2', 'l1', 'elasticnet', 'none']
+            ),
+        'dual': st.sidebar.selectbox(
+            label='dual',
+            options=[False, True]
+            ),
+        'solver': st.sidebar.selectbox(
+            label='solver',
+            options=['lbfgs', 'newton-cg', 'liblinear', 'sag', 'saga']
+            ),
+        }
+
+
+def args_GaussianNB():
+    """
+    Options for arguments
+    
+    Args:
+        None
+        
+    Returns:
+        Dict: keys(String) - arg
+              values - argument in the form of a streamlit option
+    """
+    return {
+        
+        }
+
+
+def args_SVC():
+    """
+    Options for arguments
+    
+    Args:
+        None
+        
+    Returns:
+        Dict: keys(String) - arg
+              values - argument in the form of a streamlit option
+    """
+    return {
+        'kernel': st.sidebar.selectbox(
+            label='kernel',
+            options=['rbf', 'linear', 'poly', 'sigmoid', 'precomputed']
+            ),
+        }
+
+
+def args_MLPClassifier():
+    """
+    Options for arguments
+    
+    Args:
+        None
+        
+    Returns:
+        Dict: keys(String) - arg
+              values - argument in the form of a streamlit option
+    """
+    return {
+        'activation': st.sidebar.selectbox(
+            label='activation',
+            options=['relu', 'identity', 'logistic', 'tanh']
+            ),
+        'solver': st.sidebar.selectbox(
+            label='solver',
+            options=[ 'adam', 'lbfgs', 'sgd']
+            ),
+        'learning_rate': st.sidebar.selectbox(
+            label='learning_rate',
+            options=['constant', 'invscaling', 'adaptive']
+            )
+        }
   
     
 
@@ -235,27 +367,27 @@ def run(path):
     model_dict = {
         'KNeighborsClassifier': {
             'model': KNeighborsClassifier,
-            'args': None
+            'args': args_KNeighborsClassifier
             },
         'DecisionTreeClassifier': {
             'model': DecisionTreeClassifier,
-            'args': None
+            'args': args_DecisionTreeClassifier
             },
         'LogisticRegression': {
             'model': LogisticRegression,
-            'args': None
+            'args': args_LogisticRegression
             },
         'GaussianNB': {
             'model': GaussianNB,
-            'args': None
+            'args': args_GaussianNB
             },
         'SVC': {
             'model': SVC,
-            'args': None
+            'args': args_SVC
             },
         'MLPClassifier': {
             'model': MLPClassifier,
-            'args': None
+            'args': args_MLPClassifier
             }
         }
         
@@ -264,7 +396,11 @@ def run(path):
         sorted(model_dict.keys())
         )
     
-    clf = model_dict[model_choice]['model']().fit(X_train, y_train)
+    model_args = model_dict[model_choice]['args']()
+    
+    model = model_dict[model_choice]['model'](**model_args)
+    
+    clf = model.fit(X_train, y_train)
     
     clf.predict_proba(X_test[:1])
     clf.predict(X_test[:5, :])
