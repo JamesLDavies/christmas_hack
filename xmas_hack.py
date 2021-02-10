@@ -40,8 +40,6 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import SVC
 
-from rich.console import Console
-console = Console()
 
 st.set_page_config(
         page_title='James Davies Naughty or Nice ML Dashboard',
@@ -201,13 +199,12 @@ def _MLP_classifier(X_train, y_train):
   
     
 
-def run(path, verbose=0):
+def run(path):
     """
     Main ENTRYPOINT function
     
     Args:
         path(String): path to raw data
-        verbose(Int, optional): 0 is default
         
     Returns:
         results_dict (dict)
@@ -278,7 +275,7 @@ def run(path, verbose=0):
     st.write(f'Score: {score}')
     st.text('Report: \n' + report)
     
-    # TODO: Add this to the dashboard
+    # TODO: This could be improved
     # Predict whether someone is naughty or nice
     test = [['blue', 'human', 'red', 'tall', 'alive'],
             ['brown', 'human', 'bald', 'tall', 'alive']]
@@ -298,7 +295,8 @@ def run(path, verbose=0):
         test_data['race'] = race
         
     if target_col != 'hair_colour':
-        hair_colour = st.selectbox('hair_colour', ['bald', 'black', 'blonde', 'grey'])
+        hair_colour = st.selectbox('hair_colour',
+                                   ['bald', 'black', 'blonde', 'grey'])
         test_data['hair_colour'] = hair_colour
         
     if target_col != 'height':
@@ -314,10 +312,7 @@ def run(path, verbose=0):
     test_data_2 = [list(test_data.values()),
                    ['brown', 'human', 'bald', 'tall', 'alive']]
     prediction = _predict(clf, test_data_2)
-    st.write(f"PREDICTION: {prediction}")
-        
-    y_pred = _predict(clf, test)
-    
+    st.write(f"PREDICTION: {prediction}")    
     
     results_dict = {'raw_data': raw_df}
     
@@ -327,20 +322,6 @@ def run(path, verbose=0):
 
     
 if __name__ == "__main__":
-  
     path = "christmas_hack_naughty_or_nice.csv"
-    
-    verbose = 0
-    party = False
-    results, score, report = run(path, verbose)
-    
-    # Party?!
-    if party:
-      for i in range(20):
-        console.print(":tada:", f"SCORE = {score} so PARTY!", ":tada:")
-        i = i + 1
-    
-    console.print(":sunglasses:", f"SCORE = {score}", ":sunglasses:")
-    console.print(":sunglasses:", "Report", ":sunglasses:")
-    print(report)
+    results, score, report = run(path)
     
