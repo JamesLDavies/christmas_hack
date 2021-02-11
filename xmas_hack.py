@@ -10,11 +10,16 @@ Usage:
 
 Functions:
     * _load_data
-    * _find_distinct_values
     * _scaling
     * _train_test_split
     * _predict
     * _visualise_features_to_behaviour
+    * args_KNeighborsClassifier
+    * args_DecisionTreeClassifier
+    * args_LogisticRegression
+    * args_GaussianNB
+    * args_SVC
+    * args_MLPClassifier
     * run    
     
 Classes:
@@ -30,7 +35,6 @@ import streamlit as st
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPClassifier
-from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import classification_report
 
 # Other models
@@ -143,60 +147,6 @@ def _visualise_features_to_behaviour(df, target_col):
       px.histogram(df, x=x_col, barmode='group', color=target_col),
       use_container_width=True,)   
     
-    
-def _k_neighbor_model(df, X_train, y_train, X_test, y_test):
-  """
-  docstring
-  """
-  best_score = 0
-  max_k = int(len(df) / 2)
-  for k in range(1, max_k):
-    clf = KNeighborsClassifier(n_neighbors=k
-                              ).fit(X_train, y_train)
-    score = clf.score(X_test, y_test)
-    
-    if score > best_score:
-      best_score = score
-      model = clf
-      optimum_k = k
-    
-  print(f"Optimum k: {optimum_k}")
-  return model
-
-
-def _MLP_classifier(X_train, y_train):
-  """
-  docstring
-  """
-  parameter_space = {
-    'hidden_layer_sizes': [(50,50,50), (50,100,50), (100,)],
-    'activation': ['tanh', 'relu'],
-    'solver': ['sgd', 'adam'],
-    'alpha': [0.0001, 0.05],
-    'learning_rate': ['constant','adaptive'],
-    'random_state': [0, 1000000]
- }
-  
-  mlp = MLPClassifier(max_iter=1000000)
-
-  clf = GridSearchCV(mlp, parameter_space, n_jobs=-1, cv=3)
-  clf.fit(X_train, y_train)
-  
-  # Best paramete set
-  print('Best parameters found:\n', clf.best_params_)
-
-  # All results
-#  means = clf.cv_results_['mean_test_score']
-#  stds = clf.cv_results_['std_test_score']
-#  for mean, std, params in zip(means, stds, clf.cv_results_['params']):
-#      print("%0.3f (+/-%0.03f) for %r" % (mean, std * 2, params))
-#  
-#  clf = MLPClassifier(activation='relu', alpha=0.0001,
-#                      hidden_layer_sizes=(100,), learning_rate='constant',
-#                      random_state=0, solver='sgd'
-#                      ).fit(X_train, y_train) 
-  return clf
-
 
 def args_KNeighborsClassifier():
     """
@@ -279,9 +229,7 @@ def args_GaussianNB():
         Dict: keys(String) - arg
               values - argument in the form of a streamlit option
     """
-    return {
-        
-        }
+    return {}
 
 
 def args_SVC():
@@ -330,7 +278,6 @@ def args_MLPClassifier():
         }
   
     
-
 def run(path):
     """
     Main ENTRYPOINT function
@@ -363,7 +310,6 @@ def run(path):
     X_test = _scaling(X_test)
     
     # Choose model
-    # TODO: Add arg functions
     model_dict = {
         'KNeighborsClassifier': {
             'model': KNeighborsClassifier,
