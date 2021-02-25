@@ -357,44 +357,41 @@ def run(path):
     st.write(f'Score: {score}')
     st.text('Report: \n' + report)
     
-    # TODO: This could be improved
-    # Predict whether someone is naughty or nice
-    test = [['blue', 'human', 'red', 'tall', 'alive'],
-            ['brown', 'human', 'bald', 'tall', 'alive']]
     
+    # Predict whether someone is naughty or nice
     # TODO: Write a function to find unique vals and put this in a dict
     test_data = {}
     if target_col != 'target':
-        target = st.selectbox('target', ['naughty', 'nice'])
+        target = st.selectbox('target', sorted(df['target'].unique()))
         test_data['target'] = target
         
     if target_col != 'eye_colour':
-        eye_colour = st.selectbox('eye_colour', ['blue', 'green', 'brown'])
+        eye_colour = st.selectbox('eye_colour',
+                                  sorted(df['eye_colour'].unique()))
         test_data['eye_colour'] = eye_colour
         
     if target_col != 'race':
-        race = st.selectbox('race', ['human', 'android', 'mutant'])
+        race = st.selectbox('race', sorted(df['race'].unique()))
         test_data['race'] = race
         
     if target_col != 'hair_colour':
         hair_colour = st.selectbox('hair_colour',
-                                   ['bald', 'black', 'blonde', 'grey'])
+                                   sorted(df['hair_colour'].unique()))
         test_data['hair_colour'] = hair_colour
         
     if target_col != 'height':
-        height = st.selectbox('height', ['tall', 'medium', 'small'])
+        height = st.selectbox('height', sorted(df['height'].unique()))
         test_data['height'] = height
         
     if target_col != 'status':
-        status = st.selectbox('status', ['alive', 'dead'])
+        status = st.selectbox('status', sorted(df['status'].unique()))
         test_data['status'] = status
         
-    st.write(f"TEST DATA: {test_data}")
+    test_data = [list(test_data.values())]
     
-    test_data_2 = [list(test_data.values()),
-                   ['brown', 'human', 'bald', 'tall', 'alive']]
-    prediction = _predict(clf, test_data_2)
-    st.write(f"PREDICTION: {prediction}")    
+    prediction = _predict(clf, test_data)
+    st.write(f"PREDICTION: {prediction[0]}")
+    
     
     results_dict = {'raw_data': raw_df}
     
